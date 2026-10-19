@@ -27,6 +27,7 @@ class UserModel {
       role: map['role'] ?? 'Reader',
       isLocked: map['is_locked'] ?? false,
     );
+    //hi
   }
 
   Map<String, dynamic> toMap() {
