@@ -49,7 +49,6 @@ class DefaultFirebaseOptions {
     storageBucket: 'prm3-f5c58.firebasestorage.app',
     measurementId: 'G-MX8BP4W8F4',
   );
-
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBKdyVDKOqZsZzksm-mnt0J5rQF9MBSNAk',
     appId: '1:962841586931:android:342670a4fc94c507b81b86',

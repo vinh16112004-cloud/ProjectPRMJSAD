@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'firebase_options.dart';
+import 'views/login_view.dart'; // Import trang đăng nhập
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Khởi tạo kết nối với Firebase
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   runApp(
     const ProviderScope(child: MyApp()),
@@ -20,19 +24,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Ứng dụng Báo Mới',
+      title: 'Admin CMS Dashboard',
       theme: ThemeData(
         useMaterial3: true,
         colorSchemeSeed: Colors.blue,
       ),
-      home: const Scaffold(
-        body: Center(
-          child: Text(
-            'Đã kết nối Firebase & Riverpod thành công!',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-        ),
-      ),
+      // Đặt màn hình khởi đầu là trang Login của Admin
+      home: const LoginView(),
     );
   }
 }
