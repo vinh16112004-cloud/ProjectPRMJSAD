@@ -53,6 +53,7 @@ class UserManagementView extends ConsumerWidget {
                             child: DataTable(
                               columnSpacing: 24,
                               columns: const [
+                                DataColumn(label: Text('ID (UID)')),
                                 DataColumn(label: Text('Họ và tên')),
                                 DataColumn(label: Text('Email')),
                                 DataColumn(label: Text('Số điện thoại')),
@@ -65,10 +66,39 @@ class UserManagementView extends ConsumerWidget {
 
                                 return DataRow(
                                   cells: [
-                                    // 1. Cột Họ và tên (Tối đa 220px, quá dài hiện ...)
+                                    // 1. Cột ID (UID) - Giới hạn tối đa 120px, bấm để sao chép
+                                    DataCell(
+                                      Tooltip(
+                                        message: 'Click để chép UID: ${user.uid}',
+                                        child: InkWell(
+                                          onTap: () {
+                                            Clipboard.setData(ClipboardData(text: user.uid));
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(
+                                                content: Text('Đã sao chép ID vào bộ nhớ tạm!'),
+                                                duration: Duration(seconds: 1),
+                                              ),
+                                            );
+                                          },
+                                          child: Container(
+                                            constraints: const BoxConstraints(maxWidth: 120),
+                                            child: Text(
+                                              user.uid,
+                                              overflow: TextOverflow.ellipsis,
+                                              maxLines: 1,
+                                              style: const TextStyle(
+                                                color: Colors.blue,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    // 2. Cột Họ và tên
                                     DataCell(
                                       Container(
-                                        constraints: const BoxConstraints(maxWidth: 220),
+                                        constraints: const BoxConstraints(maxWidth: 180),
                                         child: Text(
                                           user.fullName.isEmpty ? '-' : user.fullName,
                                           overflow: TextOverflow.ellipsis,
@@ -76,10 +106,10 @@ class UserManagementView extends ConsumerWidget {
                                         ),
                                       ),
                                     ),
-                                    // 2. Cột Email
+                                    // 3. Cột Email
                                     DataCell(
                                       Container(
-                                        constraints: const BoxConstraints(maxWidth: 220),
+                                        constraints: const BoxConstraints(maxWidth: 200),
                                         child: Text(
                                           user.email,
                                           overflow: TextOverflow.ellipsis,
@@ -87,11 +117,11 @@ class UserManagementView extends ConsumerWidget {
                                         ),
                                       ),
                                     ),
-                                    // 3. Cột Số điện thoại
+                                    // 4. Cột Số điện thoại
                                     DataCell(
                                       Text(user.phone.isEmpty ? '-' : user.phone),
                                     ),
-                                    // 4. Cột Vai trò
+                                    // 5. Cột Vai trò
                                     DataCell(
                                       Chip(
                                         label: Text(
@@ -106,7 +136,7 @@ class UserManagementView extends ConsumerWidget {
                                         ),
                                       ),
                                     ),
-                                    // 5. Cột Trạng thái
+                                    // 6. Cột Trạng thái
                                     DataCell(
                                       Chip(
                                         label: Text(
@@ -120,7 +150,7 @@ class UserManagementView extends ConsumerWidget {
                                             : Colors.green.shade50,
                                       ),
                                     ),
-                                    // 6. Cột Thao tác
+                                    // 7. Cột Thao tác
                                     DataCell(
                                       Row(
                                         mainAxisSize: MainAxisSize.min,
