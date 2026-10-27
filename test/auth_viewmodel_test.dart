@@ -106,6 +106,13 @@ void main() {
       expect(AuthValidators.phone('+84912345678'), isNull);
       expect(AuthValidators.phone('123'), isNotNull);
     });
+
+    test('validates 6-digit OTP code', () {
+      expect(AuthValidators.otp(''), isNotNull);
+      expect(AuthValidators.otp('12345'), isNotNull);
+      expect(AuthValidators.otp('12345a'), isNotNull);
+      expect(AuthValidators.otp('123456'), isNull);
+    });
   });
 
   group('signIn', () {
@@ -235,6 +242,39 @@ void main() {
         .thenAnswer((_) async {});
 
     await viewModel.sendPasswordResetEmail(' reader@example.com ');
+
+    verify(() => auth.sendPasswordResetEmail(email: 'reader@example.com'))
+        .called(1);
+  });
+
+  test('OTP password reset flow generates, verifies and resets password', () async {
+    when(() => auth.sendPasswordResetEmail(email: any(named: 'email')))
+        .thenAnswer((_) async {});
+
+    final otpCode = await viewModel.requestPasswordResetOtp(
+      ' reader@example.com ',
+    );
+    expect(otpCode.length, 6);
+
+    await expectLater(
+      () => viewModel.verifyPasswordResetOtp(
+        email: 'reader@example.com',
+        otp: '000000',
+      ),
+      throwsA(isA<Exception>()),
+    );
+
+    final verified = await viewModel.verifyPasswordResetOtp(
+      email: 'reader@example.com',
+      otp: otpCode,
+    );
+    expect(verified, isTrue);
+
+    await viewModel.resetPasswordWithOtp(
+      email: 'reader@example.com',
+      otp: otpCode,
+      newPassword: 'new-password-123',
+    );
 
     verify(() => auth.sendPasswordResetEmail(email: 'reader@example.com'))
         .called(1);

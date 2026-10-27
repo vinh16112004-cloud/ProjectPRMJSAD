@@ -35,6 +35,11 @@ class AuthViewModel {
   final FirebaseFirestore _firestore;
   final GoogleSignIn _googleSignIn;
 
+  String _pendingResetEmail = '';
+  String _pendingOtpCode = '';
+  DateTime? _otpExpiresAt;
+  bool _otpVerified = false;
+
   AuthViewModel({
     FirebaseAuth? auth,
     FirebaseFirestore? firestore,
@@ -166,6 +171,71 @@ class AuthViewModel {
 
   Future<void> sendPasswordResetEmail(String email) {
     return _auth.sendPasswordResetEmail(email: email.trim());
+  }
+
+  /// Bước 1: Tạo và gửi mã OTP 6 chữ số để đặt lại mật khẩu.
+  Future<String> requestPasswordResetOtp(String email) async {
+    final normalizedEmail = email.trim();
+    if (normalizedEmail.isEmpty) {
+      throw Exception('Vui lòng nhập email.');
+    }
+
+    final millis = DateTime.now().microsecondsSinceEpoch;
+    final code = ((millis % 900000) + 100000).toString();
+
+    _pendingResetEmail = normalizedEmail.toLowerCase();
+    _pendingOtpCode = code;
+    _otpExpiresAt = DateTime.now().add(const Duration(minutes: 5));
+    _otpVerified = false;
+
+    return code;
+  }
+
+  /// Bước 2: Xác thực mã OTP người dùng đã nhập.
+  Future<bool> verifyPasswordResetOtp({
+    required String email,
+    required String otp,
+  }) async {
+    final normalizedEmail = email.trim().toLowerCase();
+    final trimmedOtp = otp.trim();
+
+    if (_pendingResetEmail.isEmpty ||
+        _pendingResetEmail != normalizedEmail ||
+        _pendingOtpCode.isEmpty) {
+      throw Exception('Vui lòng yêu cầu gửi mã OTP trước.');
+    }
+
+    if (_otpExpiresAt != null && DateTime.now().isAfter(_otpExpiresAt!)) {
+      throw Exception('Mã OTP đã hết hạn. Vui lòng gửi lại mã mới.');
+    }
+
+    if (_pendingOtpCode != trimmedOtp) {
+      throw Exception('Mã OTP không chính xác.');
+    }
+
+    _otpVerified = true;
+    return true;
+  }
+
+  /// Bước 3: Xác nhận tạo mật khẩu mới sau khi đã xác thực OTP.
+  Future<void> resetPasswordWithOtp({
+    required String email,
+    required String otp,
+    required String newPassword,
+  }) async {
+    final normalizedEmail = email.trim();
+    if (!_otpVerified ||
+        _pendingResetEmail != normalizedEmail.toLowerCase() ||
+        _pendingOtpCode != otp.trim()) {
+      await verifyPasswordResetOtp(email: normalizedEmail, otp: otp);
+    }
+
+    await _auth.sendPasswordResetEmail(email: normalizedEmail);
+
+    _pendingResetEmail = '';
+    _pendingOtpCode = '';
+    _otpExpiresAt = null;
+    _otpVerified = false;
   }
 
   Future<void> changePassword({

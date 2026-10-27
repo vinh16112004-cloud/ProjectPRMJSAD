@@ -135,23 +135,76 @@ void main() {
     expect(find.byType(RegisterView), findsNothing);
   });
 
-  testWidgets('forgot password sends reset email and shows confirmation', (
-    tester,
-  ) async {
-    when(() => auth.sendPasswordResetEmail(any())).thenAnswer((_) async {});
-    await pumpView(tester, const ForgotPasswordView());
+  testWidgets(
+    'forgot password completes Email -> OTP -> New Password flow',
+    (tester) async {
+      when(
+        () => auth.requestPasswordResetOtp(any()),
+      ).thenAnswer((_) async => '654321');
+      when(
+        () => auth.verifyPasswordResetOtp(
+          email: any(named: 'email'),
+          otp: any(named: 'otp'),
+        ),
+      ).thenAnswer((_) async => true);
+      when(
+        () => auth.resetPasswordWithOtp(
+          email: any(named: 'email'),
+          otp: any(named: 'otp'),
+          newPassword: any(named: 'newPassword'),
+        ),
+      ).thenAnswer((_) async {});
 
-    await tester.enterText(
-      find.widgetWithText(TextFormField, 'Email'),
-      'reader@example.com',
-    );
-    await tester.tap(find.text('Gửi email đặt lại mật khẩu'));
-    await tester.pump();
+      await pumpView(tester, const ForgotPasswordView());
 
-    expect(find.text('Đã gửi email đặt lại mật khẩu'), findsOneWidget);
+      // Bước 1: Nhập Email -> Nhận mã OTP
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Email'),
+        'reader@example.com',
+      );
+      await tester.tap(find.text('Nhận mã OTP'));
+      await tester.pump();
 
-    await tester.tap(find.text('Gửi lại email'));
-    await tester.pump();
-    verify(() => auth.sendPasswordResetEmail('reader@example.com')).called(2);
-  });
+      verify(
+        () => auth.requestPasswordResetOtp('reader@example.com'),
+      ).called(1);
+      expect(find.textContaining('654321'), findsOneWidget);
+
+      // Bước 2: Nhập mã OTP -> Xác thực OTP
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Mã OTP xác thực'),
+        '654321',
+      );
+      await tester.tap(find.text('Xác thực OTP'));
+      await tester.pump();
+
+      verify(
+        () => auth.verifyPasswordResetOtp(
+          email: 'reader@example.com',
+          otp: '654321',
+        ),
+      ).called(1);
+
+      // Bước 3: Nhập mật khẩu mới & xác nhận -> Xác nhận đổi mật khẩu
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Mật khẩu mới'),
+        'newpass123',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Xác nhận mật khẩu mới'),
+        'newpass123',
+      );
+      await tester.tap(find.text('Xác nhận đổi mật khẩu'));
+      await tester.pump();
+
+      verify(
+        () => auth.resetPasswordWithOtp(
+          email: 'reader@example.com',
+          otp: '654321',
+          newPassword: 'newpass123',
+        ),
+      ).called(1);
+      expect(find.text('Đặt lại mật khẩu thành công'), findsOneWidget);
+    },
+  );
 }
