@@ -5,6 +5,7 @@ import 'package:untitled1/viewmodels/auth_viewmodel.dart';
 import 'search_view.dart';
 import 'settings_view.dart';
 import 'feedback_view.dart';
+import 'profile_view.dart';
 
 class UserHomeView extends ConsumerStatefulWidget {
   const UserHomeView({super.key});
@@ -54,6 +55,14 @@ class _UserHomeViewState extends ConsumerState<UserHomeView> {
             icon: const Icon(Icons.feedback, color: Colors.black87),
             tooltip: 'Góp ý',
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const FeedbackView())),
+          ),
+          IconButton(
+            icon: const Icon(Icons.account_circle_outlined, color: Colors.black87),
+            tooltip: 'Hồ sơ cá nhân',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ProfileView()),
+            ),
           ),
           // Nút Đăng xuất (đã có sẵn trước đó)
           IconButton(

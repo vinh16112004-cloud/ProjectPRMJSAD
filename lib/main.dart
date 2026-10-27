@@ -9,25 +9,24 @@ import 'package:untitled1/views/admin_dashboard_view.dart';
 import 'viewmodels/auth_viewmodel.dart';
 
 import 'views/login_view.dart';
+import 'views/register_view.dart';
+import 'views/forgot_password_view.dart';
+import 'views/user/profile_view.dart';
 import 'views/user/user_home_view.dart'; // Import trang người dùng của bạn ở đây
 import 'views/user/search_view.dart';
 import 'views/user/settings_view.dart';
 import 'views/user/feedback_view.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await ThemeManager.loadTheme();
   // Xóa dấu # trên URL của Flutter Web (biến /#/admin thành /admin)
   usePathUrlStrategy();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await AuthViewModel.restoreRememberedSession();
 
-  runApp(
-    const ProviderScope(
-      child: MyApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -42,7 +41,6 @@ class MyApp extends StatelessWidget {
         return ValueListenableBuilder<String>(
           valueListenable: ThemeManager.fontSizeNotifier,
           builder: (context, currentFontSize, child) {
-
             // Quy đổi cỡ chữ ra hệ số tỉ lệ (TextScaleFactor)
             double textScale = 1.0;
             if (currentFontSize == 'Small') textScale = 0.85;
@@ -51,16 +49,21 @@ class MyApp extends StatelessWidget {
             return MaterialApp(
               title: 'Báo Mới 24h',
               debugShowCheckedModeBanner: false,
-              theme: ThemeData(brightness: Brightness.light, useMaterial3: true),
-              darkTheme: ThemeData(brightness: Brightness.dark, useMaterial3: true),
+              theme: ThemeData(
+                brightness: Brightness.light,
+                useMaterial3: true,
+              ),
+              darkTheme: ThemeData(
+                brightness: Brightness.dark,
+                useMaterial3: true,
+              ),
               themeMode: currentThemeMode,
 
               // Áp dụng tỉ lệ cỡ chữ cho toàn bộ ứng dụng
               builder: (context, widget) {
                 return MediaQuery(
-                  data: MediaQuery.of(context).copyWith(
-                    textScaler: TextScaler.linear(textScale),
-                  ),
+                  data: MediaQuery.of(context)
+                      .copyWith(textScaler: TextScaler.linear(textScale)),
                   child: widget!,
                 );
               },
@@ -68,8 +71,11 @@ class MyApp extends StatelessWidget {
               initialRoute: '/',
               routes: {
                 '/': (context) => const AuthWrapper(),
+                '/register': (context) => const RegisterView(),
+                '/forgot-password': (context) => const ForgotPasswordView(),
                 '/admin': (context) => const AdminDashboardView(),
                 '/user': (context) => const UserHomeView(),
+                '/user/profile': (context) => const ProfileView(),
                 '/user/search': (context) => SearchView(),
                 '/user/settings': (context) => SettingsView(),
                 '/user/feedback': (context) => FeedbackView(),
@@ -97,7 +103,8 @@ class PlaceholderUserView extends StatelessWidget {
             const Text('Đây là giao diện dành cho người dùng!'),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: () => Navigator.pushReplacementNamed(context, '/admin'),
+              onPressed: () =>
+                  Navigator.pushReplacementNamed(context, '/admin'),
               child: const Text('Quay lại trang quản trị'),
             ),
           ],
@@ -107,7 +114,6 @@ class PlaceholderUserView extends StatelessWidget {
   }
 }
 
-// Widget AuthWrapper giữ nguyên như trước
 class AuthWrapper extends ConsumerWidget {
   const AuthWrapper({super.key});
 
@@ -117,20 +123,66 @@ class AuthWrapper extends ConsumerWidget {
 
     return authState.when(
       data: (user) {
-        if (user != null) {
-          return const AdminDashboardView();
-        } else {
-          return const LoginView();
-        }
+        if (user == null) return const LoginView();
+
+        final profileState = ref.watch(userProfileProvider(user.uid));
+        return profileState.when(
+          data: (profile) {
+            if (profile == null) {
+              return const _AccountMessageView(
+                title: 'Không tìm thấy hồ sơ',
+                message: 'Tài khoản chưa có hồ sơ trong hệ thống. Vui lòng đăng xuất và liên hệ quản trị viên.',
+              );
+            }
+            if (profile.isLocked) {
+              return const _AccountMessageView(
+                title: 'Tài khoản đã bị khóa',
+                message: 'Vui lòng liên hệ quản trị viên để được hỗ trợ.',
+              );
+            }
+            return profile.role == 'Admin'
+                ? const AdminDashboardView()
+                : const UserHomeView();
+          },
+          loading: () =>
+              const Scaffold(body: Center(child: CircularProgressIndicator())),
+          error: (error, stackTrace) =>
+              Scaffold(body: Center(child: Text('Lỗi tải hồ sơ: $error'))),
+        );
       },
-      loading: () => const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      ),
-      error: (error, stackTrace) => Scaffold(
-        body: Center(
-          child: Text('Lỗi xác thực: $error'),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (error, stackTrace) =>
+          Scaffold(body: Center(child: Text('Lỗi xác thực: $error'))),
+    );
+  }
+}
+
+class _AccountMessageView extends ConsumerWidget {
+  final String title;
+  final String message;
+
+  const _AccountMessageView({required this.title, required this.message});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(title, style: Theme.of(context).textTheme.headlineSmall),
+              const SizedBox(height: 12),
+              Text(message, textAlign: TextAlign.center),
+              const SizedBox(height: 20),
+              FilledButton(
+                onPressed: () => ref.read(authViewModelProvider).signOut(),
+                child: const Text('Đăng xuất'),
+              ),
+            ],
+          ),
         ),
       ),
     );
