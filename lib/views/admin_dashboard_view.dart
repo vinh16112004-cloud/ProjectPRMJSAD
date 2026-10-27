@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:untitled1/views/admin/category_management_view.dart';
 import 'package:untitled1/views/admin/user_management_view.dart';
+import 'package:untitled1/views/admin/article_management_view.dart'; // Thêm import quản lý bài báo
 
 import '../../viewmodels/auth_viewmodel.dart';
 
@@ -20,6 +21,7 @@ class _AdminDashboardViewState extends ConsumerState<AdminDashboardView> {
   final List<Widget> _pages = const [
     UserManagementView(),
     CategoryManagementView(),
+    ArticleManagementView(), // Thêm trang Quản lý bài báo vào đây
   ];
 
   @override
@@ -116,6 +118,11 @@ class _AdminDashboardViewState extends ConsumerState<AdminDashboardView> {
                 icon: Icon(Icons.category_outlined),
                 selectedIcon: Icon(Icons.category),
                 label: Text('Chuyên mục'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.article_outlined),
+                selectedIcon: Icon(Icons.article),
+                label: Text('Quản lý bài báo'),
               ),
             ],
           ),
