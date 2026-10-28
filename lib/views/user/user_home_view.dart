@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:untitled1/models/article_model.dart';
 import 'package:untitled1/models/category_model.dart';
 import 'package:untitled1/viewmodels/auth_viewmodel.dart';
-
+import 'dart:convert';
+import 'package:untitled1/viewmodels/profile_viewmodel.dart';
 import 'article_detail_view.dart';
 import 'feedback_view.dart';
 import 'profile_view.dart';
@@ -49,8 +50,8 @@ class _UserHomeViewState extends ConsumerState<UserHomeView> {
 
   Stream<List<CategoryModel>> _buildCategoryStream() {
     return FirebaseFirestore.instance.collection('categories').snapshots().map((
-      snapshot,
-    ) {
+        snapshot,
+        ) {
       final categories = snapshot.docs
           .map((doc) => CategoryModel.fromMap(doc.data(), doc.id))
           .where((category) => category.isActive)
@@ -71,12 +72,12 @@ class _UserHomeViewState extends ConsumerState<UserHomeView> {
         .where('status', isEqualTo: 1)
         .snapshots()
         .map((snapshot) {
-          final articles = snapshot.docs.map((doc) {
-            return ArticleModel.fromMap(doc.data(), doc.id);
-          }).toList();
-          articles.sort((a, b) => b.publishedAt.compareTo(a.publishedAt));
-          return articles;
-        });
+      final articles = snapshot.docs.map((doc) {
+        return ArticleModel.fromMap(doc.data(), doc.id);
+      }).toList();
+      articles.sort((a, b) => b.publishedAt.compareTo(a.publishedAt));
+      return articles;
+    });
   }
 
   // ==========================================
@@ -101,6 +102,9 @@ class _UserHomeViewState extends ConsumerState<UserHomeView> {
   Widget build(BuildContext context) {
     final currentUser = ref.watch(authStateChangesProvider).valueOrNull;
 
+    final profileState = currentUser == null
+        ? null
+        : ref.watch(userProfileProvider(currentUser.uid));
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
@@ -161,21 +165,72 @@ class _UserHomeViewState extends ConsumerState<UserHomeView> {
               ),
             )
           else ...[
-            // Hồ sơ cá nhân
+            // Hồ sơ cá nhân: hiển thị ảnh đại diện đã cập nhật
             IconButton(
-              icon: const Icon(
-                Icons.account_circle_outlined,
-                color: Colors.black87,
-              ),
               tooltip: 'Hồ sơ cá nhân',
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const ProfileView()),
+                  MaterialPageRoute(
+                    builder: (context) => const ProfileView(),
+                  ),
                 );
               },
-            ),
+              icon: profileState == null
+                  ? const CircleAvatar(
+                radius: 16,
+                child: Icon(Icons.person, size: 20),
+              )
+                  : profileState.when(
+                data: (profile) {
+                  if (profile == null) {
+                    return const CircleAvatar(
+                      radius: 16,
+                      child: Icon(Icons.person, size: 20),
+                    );
+                  }
 
+                  ImageProvider? avatarImage;
+
+                  if (profile.avatarUrl.startsWith('data:image/')) {
+                    try {
+                      avatarImage = MemoryImage(
+                        base64Decode(profile.avatarUrl.split(',').last),
+                      );
+                    } catch (_) {
+                      avatarImage = null;
+                    }
+                  } else if (profile.avatarUrl.isNotEmpty) {
+                    avatarImage = NetworkImage(profile.avatarUrl);
+                  }
+
+                  return CircleAvatar(
+                    radius: 16,
+                    backgroundColor: Colors.deepPurple.shade100,
+                    backgroundImage: avatarImage,
+                    child: avatarImage == null
+                        ? Text(
+                      profile.fullName.isEmpty
+                          ? '?'
+                          : profile.fullName[0].toUpperCase(),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    )
+                        : null,
+                  );
+                },
+                loading: () => const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                error: (_, __) => const CircleAvatar(
+                  radius: 16,
+                  child: Icon(Icons.person, size: 20),
+                ),
+              ),
+            ),
             // Đăng xuất
             IconButton(
               icon: const Icon(Icons.logout, color: Colors.redAccent),
@@ -213,10 +268,10 @@ class _UserHomeViewState extends ConsumerState<UserHomeView> {
             final filteredArticles = _selectedCategory == 'ALL'
                 ? allArticles
                 : allArticles
-                      .where(
-                        (article) => article.categoryId == _selectedCategory,
-                      )
-                      .toList();
+                .where(
+                  (article) => article.categoryId == _selectedCategory,
+            )
+                .toList();
 
             return SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -493,21 +548,21 @@ class _UserHomeViewState extends ConsumerState<UserHomeView> {
               ),
               child: iconUrl.isNotEmpty
                   ? ClipOval(
-                      child: Image.network(
-                        iconUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Icon(
-                            Icons.category,
-                            color: isSelected ? Colors.white : Colors.blue,
-                          );
-                        },
-                      ),
-                    )
-                  : Icon(
+                child: Image.network(
+                  iconUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(
                       Icons.category,
                       color: isSelected ? Colors.white : Colors.blue,
-                    ),
+                    );
+                  },
+                ),
+              )
+                  : Icon(
+                Icons.category,
+                color: isSelected ? Colors.white : Colors.blue,
+              ),
             ),
             const SizedBox(height: 6),
             Text(
@@ -627,10 +682,10 @@ class _UserHomeViewState extends ConsumerState<UserHomeView> {
   // ==========================================
 
   Widget _buildArticleImage(
-    String imageUrl, {
-    required double width,
-    required double height,
-  }) {
+      String imageUrl, {
+        required double width,
+        required double height,
+      }) {
     if (imageUrl.isEmpty) {
       return Container(
         width: width,
