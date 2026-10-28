@@ -4,8 +4,9 @@ class UserModel {
   final String email;
   final String phone;
   final String avatarUrl;
-  final String role; // 'Admin', 'Editor', 'Reader'
+  final String role;
   final bool isLocked;
+  final List<String> favoriteCategories;
 
   UserModel({
     required this.uid,
@@ -15,6 +16,7 @@ class UserModel {
     required this.avatarUrl,
     required this.role,
     required this.isLocked,
+    this.favoriteCategories = const [],
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map, String documentId) {
@@ -26,8 +28,10 @@ class UserModel {
       avatarUrl: map['avatar_url'] ?? '',
       role: map['role'] ?? 'Reader',
       isLocked: map['is_locked'] ?? false,
+      favoriteCategories: List<String>.from(
+        map['favorite_categories'] ?? const [],
+      ),
     );
-    //hi
   }
 
   Map<String, dynamic> toMap() {
@@ -38,6 +42,7 @@ class UserModel {
       'avatar_url': avatarUrl,
       'role': role,
       'is_locked': isLocked,
+      'favorite_categories': favoriteCategories,
     };
   }
 }
