@@ -140,7 +140,11 @@ class _ProfileViewState extends ConsumerState<ProfileView> {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+    final authState = ref.watch(authStateChangesProvider);
+    final user = authState.valueOrNull ?? FirebaseAuth.instance.currentUser;
+    if (authState.isLoading && user == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
     if (user == null) {
       return const Scaffold(
         body: Center(child: Text('Vui lòng đăng nhập lại.')),

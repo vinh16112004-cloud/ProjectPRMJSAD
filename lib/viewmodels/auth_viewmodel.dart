@@ -54,10 +54,8 @@ class AuthViewModel {
           defaultTargetPlatform == TargetPlatform.iOS);
 
   static Future<void> restoreRememberedSession() async {
-    final preferences = await SharedPreferences.getInstance();
-    final rememberLogin = preferences.getBool('remember_login') ?? false;
-    if (!rememberLogin && FirebaseAuth.instance.currentUser != null) {
-      await FirebaseAuth.instance.signOut();
+    if (kIsWeb) {
+      await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
     }
   }
 
