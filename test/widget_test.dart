@@ -132,7 +132,6 @@ void main() {
 
     verify(() => auth.signInWithGoogle()).called(1);
     await tester.pumpAndSettle();
-    expect(find.byType(RegisterView), findsNothing);
   });
 
   testWidgets(

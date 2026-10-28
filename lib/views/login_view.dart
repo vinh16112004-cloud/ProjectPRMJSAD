@@ -34,7 +34,10 @@ class _LoginViewState extends ConsumerState<LoginView> {
   Future<void> _run(Future<bool> Function() action) async {
     setState(() => _errorMessage = null);
     try {
-      await action();
+      final success = await action();
+      if (success && mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
     } catch (error) {
       if (mounted) setState(() => _errorMessage = authErrorMessage(error));
     }
@@ -70,6 +73,9 @@ class _LoginViewState extends ConsumerState<LoginView> {
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
+      appBar: Navigator.of(context).canPop()
+          ? AppBar(title: const Text('Đăng nhập'))
+          : null,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(

@@ -1,5 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'article_detail_view.dart';
+import 'package:untitled1/models/article_model.dart';
 
 class SearchView extends StatefulWidget {
   const SearchView({super.key});
@@ -9,86 +12,165 @@ class SearchView extends StatefulWidget {
 }
 
 class _SearchViewState extends State<SearchView> {
-  final TextEditingController _searchController = TextEditingController();
-  List<DocumentSnapshot> _searchResults = [];
-  bool _isLoading = false;
+  final controller = TextEditingController();
+  List<ArticleModel> results = [];
+  bool isLoading = false;
+  bool hasSearched = false;
 
-  Future<void> _performSearch(String keyword) async {
-    if (keyword.trim().isEmpty) return;
-    setState(() => _isLoading = true);
+  Future<void> search() async {
+    String key = controller.text.toLowerCase().trim();
+
+    if (key.isEmpty) {
+      setState(() {
+        results = [];
+        hasSearched = false;
+      });
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+      hasSearched = true;
+    });
+
     try {
-      QuerySnapshot snapshot = await FirebaseFirestore.instance
+      final snapshot = await FirebaseFirestore.instance
           .collection('articles')
           .where('status', isEqualTo: 1)
-          .orderBy('published_at', descending: true)
           .get();
 
-      // Lọc từ khóa theo tiêu đề hoặc tóm tắt
-      final results = snapshot.docs.where((doc) {
-        final data = doc.data() as Map<String, dynamic>;
-        final title = (data['title'] ?? '').toString().toLowerCase();
-        final summary = (data['summary'] ?? '').toString().toLowerCase();
-        final key = keyword.toLowerCase();
-        return title.contains(key) || summary.contains(key);
-      }).toList();
+      final articles = snapshot.docs
+          .map((doc) => ArticleModel.fromMap(doc.data(), doc.id))
+          .where((article) =>
+      article.title.toLowerCase().contains(key) ||
+          article.summary.toLowerCase().contains(key))
+          .toList();
 
-      setState(() => _searchResults = results);
-    } finally {
-      setState(() => _isLoading = false);
+      if (!mounted) return;
+
+      setState(() {
+        results = articles;
+        isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi tìm kiếm: $e')),
+      );
     }
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
         title: TextField(
-          controller: _searchController,
-          autofocus: true,
-          onSubmitted: _performSearch,
+          controller: controller,
           decoration: const InputDecoration(
-            hintText: 'Nhập từ khóa tìm kiếm bài viết...',
+            hintText: 'Tìm kiếm bài viết...',
             border: InputBorder.none,
           ),
+          onSubmitted: (_) => search(),
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
-            onPressed: () => _performSearch(_searchController.text),
-          )
+            onPressed: search,
+          ),
         ],
       ),
-      body: _isLoading
+
+      body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _searchResults.isEmpty
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search_off, size: 80, color: Colors.grey[400]),
-            const SizedBox(height: 12),
-            Text('Không tìm thấy bài viết phù hợp', style: TextStyle(color: Colors.grey[600], fontSize: 16)),
-          ],
-        ),
+          : !hasSearched
+          ? const Center(
+        child: Text('Nhập từ khóa để tìm kiếm bài viết'),
+      )
+          : results.isEmpty
+          ? const Center(
+        child: Text('Không tìm thấy bài viết'),
       )
           : ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _searchResults.length,
+        padding: const EdgeInsets.all(10),
+        itemCount: results.length,
         itemBuilder: (context, index) {
-          final item = _searchResults[index].data() as Map<String, dynamic>;
+          final article = results[index];
+
           return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            margin: const EdgeInsets.only(bottom: 10),
+            elevation: 2,
             child: ListTile(
-              contentPadding: const EdgeInsets.all(12),
-              title: Text(item['title'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: 6.0),
-                child: Text(item['summary'] ?? '', maxLines: 2, overflow: TextOverflow.ellipsis),
+              contentPadding: const EdgeInsets.all(10),
+
+              // Ảnh bài viết
+              leading: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: article.thumbnailUrl.isNotEmpty
+                    ? Image.network(
+                  article.thumbnailUrl,
+                  width: 90,
+                  height: 90,
+                  fit: BoxFit.cover,
+                  errorBuilder:
+                      (context, error, stackTrace) {
+                    return const SizedBox(
+                      width: 90,
+                      height: 90,
+                      child: Icon(
+                        Icons.broken_image,
+                        size: 35,
+                      ),
+                    );
+                  },
+                )
+                    : const SizedBox(
+                  width: 90,
+                  height: 90,
+                  child: Icon(
+                    Icons.image,
+                    size: 35,
+                  ),
+                ),
               ),
+
+              // Tiêu đề và nội dung
+              title: Text(
+                article.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              subtitle: Padding(
+                padding: const EdgeInsets.only(top: 5),
+                child: Text(
+                  article.summary,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        ArticleDetailView(article: article),
+                  ),
+                );
+              },
             ),
           );
         },

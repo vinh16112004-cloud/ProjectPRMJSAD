@@ -53,7 +53,9 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
             email: _emailController.text,
             password: _passwordController.text,
           );
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
     } catch (error) {
       if (mounted) setState(() => _errorMessage = authErrorMessage(error));
     } finally {
@@ -73,7 +75,9 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
     setState(() => _isGoogleLoading = true);
     try {
       final signedIn = await ref.read(authViewModelProvider).signInWithGoogle();
-      if (signedIn && mounted) Navigator.of(context).pop();
+      if (signedIn && mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
     } catch (error) {
       if (mounted) setState(() => _errorMessage = authErrorMessage(error));
     } finally {

@@ -1,11 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:untitled1/views/admin/article_management_view.dart';
 import 'package:untitled1/views/admin/category_management_view.dart';
 import 'package:untitled1/views/admin/user_management_view.dart';
+import 'package:untitled1/views/user/profile_view.dart';
+import 'package:untitled1/views/user/user_home_view.dart';
 
-import '../../viewmodels/auth_viewmodel.dart';
-
+import '../viewmodels/auth_viewmodel.dart';
 
 class AdminDashboardView extends ConsumerStatefulWidget {
   const AdminDashboardView({super.key});
@@ -20,12 +22,14 @@ class _AdminDashboardViewState extends ConsumerState<AdminDashboardView> {
   final List<Widget> _pages = const [
     UserManagementView(),
     CategoryManagementView(),
+    ArticleManagementView(),
   ];
 
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
-    final displayName = currentUser?.displayName ??
+    final displayName =
+        currentUser?.displayName ??
         currentUser?.email?.split('@').first ??
         'admin';
 
@@ -36,6 +40,16 @@ class _AdminDashboardViewState extends ConsumerState<AdminDashboardView> {
         foregroundColor: Colors.black,
         elevation: 1,
         actions: [
+          TextButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const UserHomeView()),
+              );
+            },
+            icon: const Icon(Icons.newspaper_outlined),
+            label: const Text('Trang đọc báo'),
+          ),
           // Menu xổ xuống "Hi, admin" tại góc phải
           PopupMenuButton<String>(
             tooltip: 'Tài khoản',
@@ -68,7 +82,12 @@ class _AdminDashboardViewState extends ConsumerState<AdminDashboardView> {
               ),
             ),
             onSelected: (value) async {
-              if (value == 'logout') {
+              if (value == 'profile') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfileView()),
+                );
+              } else if (value == 'logout') {
                 _showLogoutConfirmationDialog(context, ref);
               }
             },
@@ -81,6 +100,16 @@ class _AdminDashboardViewState extends ConsumerState<AdminDashboardView> {
                 ),
               ),
               const PopupMenuDivider(),
+              const PopupMenuItem<String>(
+                value: 'profile',
+                child: Row(
+                  children: [
+                    Icon(Icons.person_outline, size: 20),
+                    SizedBox(width: 8),
+                    Text('Hồ sơ cá nhân'),
+                  ],
+                ),
+              ),
               const PopupMenuItem<String>(
                 value: 'logout',
                 child: Row(
@@ -117,14 +146,17 @@ class _AdminDashboardViewState extends ConsumerState<AdminDashboardView> {
                 selectedIcon: Icon(Icons.category),
                 label: Text('Chuyên mục'),
               ),
+              NavigationRailDestination(
+                icon: Icon(Icons.article_outlined),
+                selectedIcon: Icon(Icons.article),
+                label: Text('Quản lý bài báo'),
+              ),
             ],
           ),
           const VerticalDivider(thickness: 1, width: 1),
 
           // Nội dung hiển thị theo trang được chọn
-          Expanded(
-            child: _pages[_selectedIndex],
-          ),
+          Expanded(child: _pages[_selectedIndex]),
         ],
       ),
     );
@@ -137,7 +169,9 @@ class _AdminDashboardViewState extends ConsumerState<AdminDashboardView> {
       builder: (context) {
         return AlertDialog(
           title: const Text('Xác nhận đăng xuất'),
-          content: const Text('Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?'),
+          content: const Text(
+            'Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -147,10 +181,12 @@ class _AdminDashboardViewState extends ConsumerState<AdminDashboardView> {
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () async {
                 Navigator.pop(context);
-                // Đăng xuất từ ViewModel, AuthWrapper sẽ tự chuyển về LoginView
                 await ref.read(authViewModelProvider).signOut();
               },
-              child: const Text('Đăng xuất', style: TextStyle(color: Colors.white)),
+              child: const Text(
+                'Đăng xuất',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         );
