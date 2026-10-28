@@ -27,7 +27,9 @@ class _AdminDashboardViewState extends ConsumerState<AdminDashboardView> {
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = FirebaseAuth.instance.currentUser;
+    final authState = ref.watch(authStateChangesProvider);
+    final currentUser =
+        authState.valueOrNull ?? FirebaseAuth.instance.currentUser;
     final displayName =
         currentUser?.displayName ??
         currentUser?.email?.split('@').first ??
