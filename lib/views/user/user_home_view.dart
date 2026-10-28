@@ -8,6 +8,8 @@ import 'package:untitled1/viewmodels/auth_viewmodel.dart';
 import 'article_detail_view.dart';
 import 'feedback_view.dart';
 import 'profile_view.dart';
+import 'bookmark_view.dart';
+import 'reading_history_view.dart';
 import 'search_view.dart';
 import 'settings_view.dart';
 
@@ -127,6 +129,8 @@ class _UserHomeViewState extends ConsumerState<UserHomeView> {
             },
           ),
 
+
+
           // Cài đặt
           IconButton(
             icon: const Icon(Icons.settings, color: Colors.black87),
@@ -161,6 +165,26 @@ class _UserHomeViewState extends ConsumerState<UserHomeView> {
               ),
             )
           else ...[
+            IconButton(
+              icon: const Icon(Icons.history, color: Colors.black87),
+              tooltip: 'Lịch sử đọc',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ReadingHistoryView()),
+                );
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.bookmark_outline, color: Colors.black87),
+              tooltip: 'Tin đã lưu',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const BookmarkView()),
+                );
+              },
+            ),
             // Hồ sơ cá nhân
             IconButton(
               icon: const Icon(
