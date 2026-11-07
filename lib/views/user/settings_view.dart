@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../theme_manager.dart'; // Hoặc đường dẫn tương ứng tới theme_manager.dart
+import '../../theme_manager.dart';
+import 'bookmarks_view.dart';
+import 'reading_history_view.dart';
+
 class SettingsView extends StatefulWidget {
   const SettingsView({super.key});
 
@@ -62,7 +65,6 @@ class _SettingsViewState extends State<SettingsView> {
                 if (val != null) {
                   setState(() => _fontSize = val);
                   _saveSetting('font_size', val);
-                  // Kích hoạt đổi cỡ chữ toàn ứng dụng lập tức
                   ThemeManager.changeFontSize(val);
                 }
               },
@@ -75,8 +77,33 @@ class _SettingsViewState extends State<SettingsView> {
             onChanged: (val) {
               setState(() => _isDarkMode = val);
               _saveSetting('is_dark_mode', val);
-              // === THÊM DÒNG NÀY ĐỂ KÍCH HOẠT ĐỔI MÀU TOÀN APP ===
               ThemeManager.toggleTheme(val);
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.history, color: Colors.blue),
+            title: const Text('Lịch sử đọc báo'),
+            subtitle: const Text('Xem lại và quản lý các bài báo đã đọc gần đây'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ReadingHistoryView()),
+              );
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.bookmark_outline, color: Colors.amber),
+            title: const Text('Danh sách yêu thích'),
+            subtitle: const Text('Các bài báo đã lưu để đọc offline'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const BookmarksView()),
+              );
             },
           ),
           const Divider(),

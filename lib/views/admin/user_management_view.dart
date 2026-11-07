@@ -183,11 +183,6 @@ class UserManagementView extends ConsumerWidget {
                                             tooltip: 'Chỉnh sửa thông tin',
                                             onPressed: () => _showEditUserDialog(context, ref, user),
                                           ),
-                                          IconButton(
-                                            icon: const Icon(Icons.delete, color: Colors.red),
-                                            tooltip: 'Xóa người dùng',
-                                            onPressed: () => _showDeleteDialog(context, ref, user, isSelf),
-                                          ),
                                         ],
                                       ),
                                     ),
@@ -517,46 +512,6 @@ class UserManagementView extends ConsumerWidget {
               ],
             );
           },
-        );
-      },
-    );
-  }
-
-  // --- MODAL XÁC NHẬN XÓA NGƯỜI DÙNG ---
-  void _showDeleteDialog(BuildContext context, WidgetRef ref, UserModel user, bool isSelf) {
-    if (isSelf) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Không hợp lệ'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Xác nhận xóa'),
-          content: Text('Bạn có chắc chắn muốn xóa tài khoản ${user.email}?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Hủy'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              onPressed: () async {
-                await ref
-                    .read(userManagementViewModelProvider)
-                    .deleteUser(user.uid);
-                if (context.mounted) Navigator.pop(context);
-              },
-              child: const Text('Xóa', style: TextStyle(color: Colors.white)),
-            ),
-          ],
         );
       },
     );

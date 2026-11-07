@@ -6,8 +6,10 @@ import 'package:untitled1/models/category_model.dart';
 import 'package:untitled1/viewmodels/auth_viewmodel.dart';
 
 import 'article_detail_view.dart';
+import 'bookmarks_view.dart';
 import 'feedback_view.dart';
 import 'profile_view.dart';
+import 'reading_history_view.dart';
 import 'search_view.dart';
 import 'settings_view.dart';
 
@@ -123,6 +125,30 @@ class _UserHomeViewState extends ConsumerState<UserHomeView> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const SearchView()),
+              );
+            },
+          ),
+
+          // Lịch sử đọc bài
+          IconButton(
+            icon: const Icon(Icons.history, color: Colors.black87),
+            tooltip: 'Lịch sử đọc báo',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ReadingHistoryView()),
+              );
+            },
+          ),
+
+          // Bài viết đã lưu (Bookmark)
+          IconButton(
+            icon: const Icon(Icons.bookmark_outline, color: Colors.black87),
+            tooltip: 'Danh sách yêu thích',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const BookmarksView()),
               );
             },
           ),
