@@ -27,7 +27,6 @@ class _ForgotPasswordViewState extends ConsumerState<ForgotPasswordView> {
   bool _isLoading = false;
   bool _obscurePassword = true;
   String? _errorMessage;
-  String? _generatedOtpPreview;
 
   @override
   void dispose() {
@@ -46,14 +45,20 @@ class _ForgotPasswordViewState extends ConsumerState<ForgotPasswordView> {
     });
 
     try {
-      final otpCode = await ref
+      await ref
           .read(authViewModelProvider)
           .requestPasswordResetOtp(_emailController.text);
       if (mounted) {
         setState(() {
-          _generatedOtpPreview = otpCode;
           _step = _ResetStep.otp;
         });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Mã OTP gồm 6 chữ số đã được gửi tới ${_emailController.text.trim()}',
+            ),
+          ),
+        );
       }
     } catch (error) {
       if (mounted) setState(() => _errorMessage = authErrorMessage(error));
@@ -151,7 +156,7 @@ class _ForgotPasswordViewState extends ConsumerState<ForgotPasswordView> {
                     ],
                     switch (_step) {
                       _ResetStep.email => _buildEmailStep(),
-                      _ResetStep.otp => _buildOtpStep(context),
+                      _ResetStep.otp => _buildOtpStep(),
                       _ResetStep.newPassword => _buildNewPasswordStep(),
                       _ResetStep.completed => _buildSuccess(),
                     },
@@ -226,7 +231,7 @@ class _ForgotPasswordViewState extends ConsumerState<ForgotPasswordView> {
           const Icon(Icons.lock_reset, size: 56, color: Colors.blue),
           const SizedBox(height: 16),
           const Text(
-            'Bước 1: Nhập email đã đăng ký để nhận mã OTP xác thực đặt lại mật khẩu.',
+            'Bước 1: Nhập email đã đăng ký để nhận mã OTP gồm 6 chữ số qua email.',
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -261,39 +266,23 @@ class _ForgotPasswordViewState extends ConsumerState<ForgotPasswordView> {
     );
   }
 
-  Widget _buildOtpStep(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-
+  Widget _buildOtpStep() {
     return Form(
       key: _otpFormKey,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Icon(Icons.verified_user_outlined, size: 56, color: Colors.blue),
+          const Icon(
+            Icons.verified_user_outlined,
+            size: 56,
+            color: Colors.blue,
+          ),
           const SizedBox(height: 16),
           Text(
-            'Bước 2: Nhập mã OTP gồm 6 chữ số đã gửi tới ${_emailController.text.trim()}.',
+            'Bước 2: Mã OTP gồm 6 chữ số đã được gửi tới email ${_emailController.text.trim()}. Vui lòng kiểm tra hộp thư đến (hoặc thư rác) và nhập mã xác thực bên dưới.',
             textAlign: TextAlign.center,
           ),
-          if (_generatedOtpPreview != null) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: colors.primaryContainer,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                'Mã OTP xác thực của bạn: $_generatedOtpPreview',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: colors.onPrimaryContainer,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
           const SizedBox(height: 20),
           TextFormField(
             controller: _otpController,
@@ -417,7 +406,7 @@ class _ForgotPasswordViewState extends ConsumerState<ForgotPasswordView> {
       mainAxisSize: MainAxisSize.min,
       children: [
         const Icon(
-          Icons.mark_email_read_outlined,
+          Icons.check_circle_outline,
           size: 64,
           color: Colors.green,
         ),
@@ -429,7 +418,7 @@ class _ForgotPasswordViewState extends ConsumerState<ForgotPasswordView> {
         ),
         const SizedBox(height: 12),
         Text(
-          'Yêu cầu tạo mật khẩu mới cho ${_emailController.text.trim()} đã được xác thực bằng OTP. Liên kết đồng bộ bảo mật cũng đã được gửi tới email của bạn.',
+          'Mật khẩu mới cho tài khoản ${_emailController.text.trim()} đã được cập nhật thành công. Bạn có thể đăng nhập ngay bằng mật khẩu mới.',
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 20),

@@ -41,9 +41,12 @@ class UserManagementView extends ConsumerWidget {
       'uid': newUid,
       'email': email,
       'fullName': fullName,
+      'full_name': fullName,
       'phone': phone,
       'role': role,
       'isLocked': false,
+      'is_locked': false,
+      'password': password,
       'createdAt': FieldValue.serverTimestamp(),
     });
 
