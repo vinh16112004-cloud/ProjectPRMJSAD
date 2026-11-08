@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:untitled1/models/user_model.dart';
 import 'package:untitled1/views/admin/article_management_view.dart';
 import 'package:untitled1/views/admin/category_management_view.dart';
 import 'package:untitled1/views/admin/user_management_view.dart';
@@ -8,6 +9,7 @@ import 'package:untitled1/views/user/profile_view.dart';
 import 'package:untitled1/views/user/user_home_view.dart';
 
 import '../viewmodels/auth_viewmodel.dart';
+import '../viewmodels/user_management_viewmodel.dart';
 
 class AdminDashboardView extends ConsumerStatefulWidget {
   const AdminDashboardView({super.key});
@@ -19,39 +21,88 @@ class AdminDashboardView extends ConsumerStatefulWidget {
 class _AdminDashboardViewState extends ConsumerState<AdminDashboardView> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = const [
-    UserManagementView(),
-    CategoryManagementView(),
-    ArticleManagementView(),
-  ];
-
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateChangesProvider);
     final currentUser =
         authState.valueOrNull ?? FirebaseAuth.instance.currentUser;
+
+    // Lấy danh sách user từ stream để trích xuất role của tài khoản đang đăng nhập
+    final usersAsync = ref.watch(userListStreamProvider);
+
+    final currentUserModel = usersAsync.valueOrNull?.firstWhere(
+          (u) => u.uid == currentUser?.uid,
+      orElse: () => UserModel(
+        uid: currentUser?.uid ?? '',
+        email: currentUser?.email ?? '',
+        fullName: '',
+        phone: '',
+        role: 'Editor',
+        isLocked: false, avatarUrl: '',
+      ),
+    );
+
+    // Lấy role động từ database (chuyển về chữ thường để so sánh)
+    final String userRole = currentUserModel?.role?.toLowerCase() ?? 'editor';
+
     final displayName =
         currentUser?.displayName ??
-        currentUser?.email?.split('@').first ??
-        'admin';
+            currentUser?.email?.split('@').first ??
+            'admin';
+
+    // Phân quyền danh sách trang và menu theo role thực tế
+    final List<Widget> pages;
+    final List<NavigationRailDestination> destinations;
+
+    if (userRole == 'admin') {
+      pages = const [UserManagementView()];
+      destinations = const [
+        NavigationRailDestination(
+          icon: Icon(Icons.people_outline),
+          selectedIcon: Icon(Icons.people),
+          label: Text('Quản lý User'),
+        ),
+      ];
+    } else {
+      pages = const [
+        CategoryManagementView(),
+        ArticleManagementView(),
+      ];
+      destinations = const [
+        NavigationRailDestination(
+          icon: Icon(Icons.category_outlined),
+          selectedIcon: Icon(Icons.category),
+          label: Text('Chuyên mục'),
+        ),
+        NavigationRailDestination(
+          icon: Icon(Icons.article_outlined),
+          selectedIcon: Icon(Icons.article),
+          label: Text('Quản lý bài báo'),
+        ),
+      ];
+    }
+
+    if (_selectedIndex >= pages.length) {
+      _selectedIndex = 0;
+    }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Admin CMS Dashboard'),
+        title: Text(userRole == 'admin' ? 'Admin Dashboard' : 'Editor Dashboard'),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 1,
         actions: [
-          TextButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const UserHomeView()),
-              );
-            },
-            icon: const Icon(Icons.newspaper_outlined),
-            label: const Text('Trang đọc báo'),
-          ),
+          // TextButton.icon(
+          //   onPressed: () {
+          //     Navigator.push(
+          //       context,
+          //       MaterialPageRoute(builder: (_) => const UserHomeView()),
+          //     );
+          //   },
+          //   icon: const Icon(Icons.newspaper_outlined),
+          //   label: const Text('Trang đọc báo'),
+          // ),
           // Menu xổ xuống "Hi, admin" tại góc phải
           PopupMenuButton<String>(
             tooltip: 'Tài khoản',
@@ -64,7 +115,7 @@ class _AdminDashboardViewState extends ConsumerState<AdminDashboardView> {
                     radius: 16,
                     backgroundColor: Colors.blue.shade100,
                     child: Text(
-                      displayName.substring(0, 1).toUpperCase(),
+                      displayName.isNotEmpty ? displayName.substring(0, 1).toUpperCase() : 'A',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.blue,
@@ -137,28 +188,12 @@ class _AdminDashboardViewState extends ConsumerState<AdminDashboardView> {
               });
             },
             labelType: NavigationRailLabelType.all,
-            destinations: const [
-              NavigationRailDestination(
-                icon: Icon(Icons.people_outline),
-                selectedIcon: Icon(Icons.people),
-                label: Text('Quản lý User'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.category_outlined),
-                selectedIcon: Icon(Icons.category),
-                label: Text('Chuyên mục'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.article_outlined),
-                selectedIcon: Icon(Icons.article),
-                label: Text('Quản lý bài báo'),
-              ),
-            ],
+            destinations: destinations,
           ),
           const VerticalDivider(thickness: 1, width: 1),
 
           // Nội dung hiển thị theo trang được chọn
-          Expanded(child: _pages[_selectedIndex]),
+          Expanded(child: pages[_selectedIndex]),
         ],
       ),
     );

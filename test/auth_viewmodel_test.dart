@@ -248,8 +248,9 @@ void main() {
   });
 
   test('OTP password reset flow generates, verifies and resets password', () async {
-    when(() => auth.sendPasswordResetEmail(email: any(named: 'email')))
-        .thenAnswer((_) async {});
+    when(() => auth.currentUser).thenReturn(user);
+    when(() => user.email).thenReturn('reader@example.com');
+    when(() => user.updatePassword(any())).thenAnswer((_) async {});
 
     final otpCode = await viewModel.requestPasswordResetOtp(
       ' reader@example.com ',
@@ -276,8 +277,8 @@ void main() {
       newPassword: 'new-password-123',
     );
 
-    verify(() => auth.sendPasswordResetEmail(email: 'reader@example.com'))
-        .called(1);
+    verify(() => user.updatePassword('new-password-123')).called(1);
+    verifyNever(() => auth.sendPasswordResetEmail(email: any(named: 'email')));
   });
 
   test('change password reauthenticates before updating', () async {

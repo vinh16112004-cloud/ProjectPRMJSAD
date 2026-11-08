@@ -167,7 +167,7 @@ void main() {
       verify(
         () => auth.requestPasswordResetOtp('reader@example.com'),
       ).called(1);
-      expect(find.textContaining('654321'), findsOneWidget);
+      expect(find.textContaining('Mã OTP xác thực của bạn:'), findsNothing);
 
       // Bước 2: Nhập mã OTP -> Xác thực OTP
       await tester.enterText(

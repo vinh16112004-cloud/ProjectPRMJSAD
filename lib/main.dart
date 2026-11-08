@@ -10,8 +10,10 @@ import 'viewmodels/auth_viewmodel.dart';
 import 'views/forgot_password_view.dart';
 import 'views/login_view.dart';
 import 'views/register_view.dart';
+import 'views/user/bookmarks_view.dart';
 import 'views/user/feedback_view.dart';
 import 'views/user/profile_view.dart';
+import 'views/user/reading_history_view.dart';
 import 'views/user/search_view.dart';
 import 'views/user/settings_view.dart';
 import 'views/user/user_home_view.dart';
@@ -73,6 +75,8 @@ class MyApp extends StatelessWidget {
                 '/user/profile': (context) => const ProfileView(),
                 '/user/search': (context) => const SearchView(),
                 '/user/settings': (context) => const SettingsView(),
+                '/user/history': (context) => const ReadingHistoryView(),
+                '/user/bookmarks': (context) => const BookmarksView(),
                 '/user/feedback': (context) => const FeedbackView(),
               },
             );

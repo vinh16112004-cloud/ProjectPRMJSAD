@@ -135,11 +135,11 @@ class CategoryManagementView extends ConsumerWidget {
                                             tooltip: 'Chỉnh sửa',
                                             onPressed: () => _showEditCategoryDialog(context, ref, category),
                                           ),
-                                          IconButton(
-                                            icon: const Icon(Icons.delete, color: Colors.red),
-                                            tooltip: 'Xóa',
-                                            onPressed: () => _showDeleteCategoryDialog(context, ref, category),
-                                          ),
+                                          // IconButton(
+                                          //   icon: const Icon(Icons.delete, color: Colors.red),
+                                          //   tooltip: 'Xóa',
+                                          //   onPressed: () => _showDeleteCategoryDialog(context, ref, category),
+                                          // ),
                                         ],
                                       ),
                                     ),
