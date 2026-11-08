@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:untitled1/models/article_model.dart';
@@ -46,13 +47,42 @@ class _UserHomeViewState extends ConsumerState<UserHomeView> {
   }
 
   // ==========================================
+  // HÀM CHUẨN HÓA LINK ẢNH & XỬ LÝ LỖI CORS TRÊN WEB
+  // ==========================================
+
+  String _resolveImageUrl(String rawUrl) {
+    final trimmed = rawUrl.trim();
+    if (trimmed.isEmpty) return '';
+
+    String directUrl = trimmed;
+    try {
+      final uri = Uri.parse(trimmed);
+      // 1. Nếu dán nhầm link Google Images (google.com/imgres?imgurl=...), tự động tách lấy link ảnh gốc
+      if (uri.host.contains('google.') &&
+          uri.queryParameters.containsKey('imgurl')) {
+        directUrl = uri.queryParameters['imgurl']!;
+      }
+    } catch (_) {}
+
+    // 2. Nếu chạy trên Flutter Web và là ảnh từ trang web bên ngoài,
+    // đi qua proxy wsrv.nl để có header Access-Control-Allow-Origin, tránh lỗi CORS
+    if (kIsWeb &&
+        !directUrl.contains('firebasestorage.googleapis.com') &&
+        !directUrl.startsWith('data:')) {
+      return 'https://wsrv.nl/?url=${Uri.encodeComponent(directUrl)}';
+    }
+
+    return directUrl;
+  }
+
+  // ==========================================
   // 1. LẤY DANH SÁCH DANH MỤC
   // ==========================================
 
   Stream<List<CategoryModel>> _buildCategoryStream() {
     return FirebaseFirestore.instance.collection('categories').snapshots().map((
-      snapshot,
-    ) {
+        snapshot,
+        ) {
       final categories = snapshot.docs
           .map((doc) => CategoryModel.fromMap(doc.data(), doc.id))
           .where((category) => category.isActive)
@@ -73,12 +103,12 @@ class _UserHomeViewState extends ConsumerState<UserHomeView> {
         .where('status', isEqualTo: 1)
         .snapshots()
         .map((snapshot) {
-          final articles = snapshot.docs.map((doc) {
-            return ArticleModel.fromMap(doc.data(), doc.id);
-          }).toList();
-          articles.sort((a, b) => b.publishedAt.compareTo(a.publishedAt));
-          return articles;
-        });
+      final articles = snapshot.docs.map((doc) {
+        return ArticleModel.fromMap(doc.data(), doc.id);
+      }).toList();
+      articles.sort((a, b) => b.publishedAt.compareTo(a.publishedAt));
+      return articles;
+    });
   }
 
   // ==========================================
@@ -136,7 +166,9 @@ class _UserHomeViewState extends ConsumerState<UserHomeView> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const ReadingHistoryView()),
+                MaterialPageRoute(
+                  builder: (context) => const ReadingHistoryView(),
+                ),
               );
             },
           ),
@@ -239,10 +271,10 @@ class _UserHomeViewState extends ConsumerState<UserHomeView> {
             final filteredArticles = _selectedCategory == 'ALL'
                 ? allArticles
                 : allArticles
-                      .where(
-                        (article) => article.categoryId == _selectedCategory,
-                      )
-                      .toList();
+                .where(
+                  (article) => article.categoryId == _selectedCategory,
+            )
+                .toList();
 
             return SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -281,7 +313,6 @@ class _UserHomeViewState extends ConsumerState<UserHomeView> {
                           child: Center(child: CircularProgressIndicator()),
                         );
                       }
-
                       if (categorySnapshot.hasError) {
                         return Padding(
                           padding: const EdgeInsets.all(16),
@@ -496,6 +527,7 @@ class _UserHomeViewState extends ConsumerState<UserHomeView> {
     required String iconUrl,
   }) {
     final isSelected = _selectedCategory == id;
+    final resolvedIconUrl = _resolveImageUrl(iconUrl);
 
     return GestureDetector(
       onTap: () {
@@ -517,23 +549,23 @@ class _UserHomeViewState extends ConsumerState<UserHomeView> {
                     : Colors.blue.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: iconUrl.isNotEmpty
+              child: resolvedIconUrl.isNotEmpty
                   ? ClipOval(
-                      child: Image.network(
-                        iconUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Icon(
-                            Icons.category,
-                            color: isSelected ? Colors.white : Colors.blue,
-                          );
-                        },
-                      ),
-                    )
-                  : Icon(
+                child: Image.network(
+                  resolvedIconUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(
                       Icons.category,
                       color: isSelected ? Colors.white : Colors.blue,
-                    ),
+                    );
+                  },
+                ),
+              )
+                  : Icon(
+                Icons.category,
+                color: isSelected ? Colors.white : Colors.blue,
+              ),
             ),
             const SizedBox(height: 6),
             Text(
@@ -653,11 +685,13 @@ class _UserHomeViewState extends ConsumerState<UserHomeView> {
   // ==========================================
 
   Widget _buildArticleImage(
-    String imageUrl, {
-    required double width,
-    required double height,
-  }) {
-    if (imageUrl.isEmpty) {
+      String imageUrl, {
+        required double width,
+        required double height,
+      }) {
+    final resolvedUrl = _resolveImageUrl(imageUrl);
+
+    if (resolvedUrl.isEmpty) {
       return Container(
         width: width,
         height: height,
@@ -667,7 +701,7 @@ class _UserHomeViewState extends ConsumerState<UserHomeView> {
     }
 
     return Image.network(
-      imageUrl,
+      resolvedUrl,
       width: width,
       height: height,
       fit: BoxFit.cover,
