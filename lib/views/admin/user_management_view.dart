@@ -1,4 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +10,46 @@ import '../../viewmodels/user_management_viewmodel.dart';
 
 class UserManagementView extends ConsumerWidget {
   const UserManagementView({super.key});
+
+  // Hàm tạo user mới trên nhánh Firebase phụ để KHÔNG làm mất phiên đăng nhập của Admin
+  Future<void> _createUserWithoutLogout({
+    required String email,
+    required String password,
+    required String role,
+    required String fullName,
+    required String phone,
+  }) async {
+    FirebaseApp SecondaryApp;
+    try {
+      SecondaryApp = Firebase.app('SecondaryApp');
+    } catch (_) {
+      SecondaryApp = await Firebase.initializeApp(
+        name: 'SecondaryApp',
+        options: Firebase.app().options,
+      );
+    }
+
+    final tempAuth = FirebaseAuth.instanceFor(app: SecondaryApp);
+    final userCredential = await tempAuth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+
+    final newUid = userCredential.user!.uid;
+
+    await FirebaseFirestore.instance.collection('users').doc(newUid).set({
+      'uid': newUid,
+      'email': email,
+      'fullName': fullName,
+      'phone': phone,
+      'role': role,
+      'isLocked': false,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    // Đăng xuất trên nhánh phụ, phiên đăng nhập của Admin ở nhánh chính được giữ nguyên
+    await tempAuth.signOut();
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -49,7 +91,9 @@ class UserManagementView extends ConsumerWidget {
                         child: SingleChildScrollView(
                           scrollDirection: Axis.vertical,
                           child: ConstrainedBox(
-                            constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                            constraints: BoxConstraints(
+                              minWidth: constraints.maxWidth,
+                            ),
                             child: DataTable(
                               columnSpacing: 24,
                               columns: const [
@@ -72,16 +116,23 @@ class UserManagementView extends ConsumerWidget {
                                         message: 'Click để chép UID: ${user.uid}',
                                         child: InkWell(
                                           onTap: () {
-                                            Clipboard.setData(ClipboardData(text: user.uid));
-                                            ScaffoldMessenger.of(context).showSnackBar(
+                                            Clipboard.setData(
+                                              ClipboardData(text: user.uid),
+                                            );
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
                                               const SnackBar(
-                                                content: Text('Đã sao chép ID vào bộ nhớ tạm!'),
+                                                content: Text(
+                                                  'Đã sao chép ID vào bộ nhớ tạm!',
+                                                ),
                                                 duration: Duration(seconds: 1),
                                               ),
                                             );
                                           },
                                           child: Container(
-                                            constraints: const BoxConstraints(maxWidth: 120),
+                                            constraints: const BoxConstraints(
+                                              maxWidth: 120,
+                                            ),
                                             child: Text(
                                               user.uid,
                                               overflow: TextOverflow.ellipsis,
@@ -98,9 +149,13 @@ class UserManagementView extends ConsumerWidget {
                                     // 2. Cột Họ và tên
                                     DataCell(
                                       Container(
-                                        constraints: const BoxConstraints(maxWidth: 180),
+                                        constraints: const BoxConstraints(
+                                          maxWidth: 180,
+                                        ),
                                         child: Text(
-                                          user.fullName.isEmpty ? '-' : user.fullName,
+                                          user.fullName.isEmpty
+                                              ? '-'
+                                              : user.fullName,
                                           overflow: TextOverflow.ellipsis,
                                           maxLines: 1,
                                         ),
@@ -109,7 +164,9 @@ class UserManagementView extends ConsumerWidget {
                                     // 3. Cột Email
                                     DataCell(
                                       Container(
-                                        constraints: const BoxConstraints(maxWidth: 200),
+                                        constraints: const BoxConstraints(
+                                          maxWidth: 200,
+                                        ),
                                         child: Text(
                                           user.email,
                                           overflow: TextOverflow.ellipsis,
@@ -119,7 +176,9 @@ class UserManagementView extends ConsumerWidget {
                                     ),
                                     // 4. Cột Số điện thoại
                                     DataCell(
-                                      Text(user.phone.isEmpty ? '-' : user.phone),
+                                      Text(
+                                        user.phone.isEmpty ? '-' : user.phone,
+                                      ),
                                     ),
                                     // 5. Cột Vai trò
                                     DataCell(
@@ -140,9 +199,13 @@ class UserManagementView extends ConsumerWidget {
                                     DataCell(
                                       Chip(
                                         label: Text(
-                                          user.isLocked ? 'Đã khóa' : 'Hoạt động',
+                                          user.isLocked
+                                              ? 'Đã khóa'
+                                              : 'Hoạt động',
                                           style: TextStyle(
-                                            color: user.isLocked ? Colors.red : Colors.green,
+                                            color: user.isLocked
+                                                ? Colors.red
+                                                : Colors.green,
                                           ),
                                         ),
                                         backgroundColor: user.isLocked
@@ -157,31 +220,53 @@ class UserManagementView extends ConsumerWidget {
                                         children: [
                                           IconButton(
                                             icon: Icon(
-                                              user.isLocked ? Icons.lock_open : Icons.lock,
-                                              color: user.isLocked ? Colors.green : Colors.orange,
+                                              user.isLocked
+                                                  ? Icons.lock_open
+                                                  : Icons.lock,
+                                              color: user.isLocked
+                                                  ? Colors.green
+                                                  : Colors.orange,
                                             ),
-                                            tooltip: user.isLocked ? 'Mở khóa' : 'Khóa tài khoản',
+                                            tooltip: user.isLocked
+                                                ? 'Mở khóa'
+                                                : 'Khóa tài khoản',
                                             onPressed: () async {
                                               if (isSelf) {
-                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
                                                   const SnackBar(
                                                     content: Text('Không hợp lệ'),
                                                     backgroundColor: Colors.red,
-                                                    duration: Duration(seconds: 2),
+                                                    duration: Duration(
+                                                      seconds: 2,
+                                                    ),
                                                   ),
                                                 );
                                                 return;
                                               }
 
                                               await ref
-                                                  .read(userManagementViewModelProvider)
-                                                  .toggleLockUser(user.uid, user.isLocked);
+                                                  .read(
+                                                userManagementViewModelProvider,
+                                              )
+                                                  .toggleLockUser(
+                                                user.uid,
+                                                user.isLocked,
+                                              );
                                             },
                                           ),
                                           IconButton(
-                                            icon: const Icon(Icons.edit, color: Colors.blue),
+                                            icon: const Icon(
+                                              Icons.edit,
+                                              color: Colors.blue,
+                                            ),
                                             tooltip: 'Chỉnh sửa thông tin',
-                                            onPressed: () => _showEditUserDialog(context, ref, user),
+                                            onPressed: () =>
+                                                _showEditUserDialog(
+                                                  context,
+                                                  ref,
+                                                  user,
+                                                ),
                                           ),
                                         ],
                                       ),
@@ -197,7 +282,8 @@ class UserManagementView extends ConsumerWidget {
                   );
                 },
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, stack) => Center(child: Text('Lỗi tải dữ liệu: $err')),
+                error: (err, stack) =>
+                    Center(child: Text('Lỗi tải dữ liệu: $err')),
               ),
             ),
           ],
@@ -302,8 +388,14 @@ class UserManagementView extends ConsumerWidget {
                             border: OutlineInputBorder(),
                           ),
                           items: const [
-                            DropdownMenuItem(value: 'Admin', child: Text('Admin')),
-                            DropdownMenuItem(value: 'Editor', child: Text('Editor')),
+                            DropdownMenuItem(
+                              value: 'Admin',
+                              child: Text('Admin'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'Editor',
+                              child: Text('Editor'),
+                            ),
                           ],
                           onChanged: (val) {
                             if (val != null) setState(() => selectedRole = val);
@@ -326,9 +418,7 @@ class UserManagementView extends ConsumerWidget {
                     if (!formKey.currentState!.validate()) return;
                     setState(() => isLoading = true);
                     try {
-                      await ref
-                          .read(userManagementViewModelProvider)
-                          .createUser(
+                      await _createUserWithoutLogout(
                         email: emailController.text.trim(),
                         password: passwordController.text.trim(),
                         role: selectedRole,
@@ -381,11 +471,16 @@ class UserManagementView extends ConsumerWidget {
   }
 
   // --- MODAL CHỈNH SỬA THÔNG TIN NGƯỜI DÙNG ---
-  void _showEditUserDialog(BuildContext context, WidgetRef ref, UserModel user) {
+  void _showEditUserDialog(
+      BuildContext context,
+      WidgetRef ref,
+      UserModel user,
+      ) {
     final formKey = GlobalKey<FormState>();
     final fullNameController = TextEditingController(text: user.fullName);
     final phoneController = TextEditingController(text: user.phone);
-    String currentRole = user.role;
+    String currentRole =
+    (user.role == 'Admin' || user.role == 'Editor') ? user.role : 'Editor';
     bool isLoading = false;
 
     showDialog(
@@ -438,9 +533,14 @@ class UserManagementView extends ConsumerWidget {
                             border: OutlineInputBorder(),
                           ),
                           items: const [
-                            DropdownMenuItem(value: 'Admin', child: Text('Admin')),
-                            DropdownMenuItem(value: 'Editor', child: Text('Editor')),
-                            DropdownMenuItem(value: 'Reader', child: Text('Reader')),
+                            DropdownMenuItem(
+                              value: 'Admin',
+                              child: Text('Admin'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'Editor',
+                              child: Text('Editor'),
+                            ),
                           ],
                           onChanged: (val) {
                             if (val != null) setState(() => currentRole = val);
@@ -478,7 +578,9 @@ class UserManagementView extends ConsumerWidget {
                         Navigator.pop(context);
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Cập nhật thông tin thành công!'),
+                            content: Text(
+                              'Cập nhật thông tin thành công!',
+                            ),
                             backgroundColor: Colors.green,
                           ),
                         );
@@ -487,7 +589,9 @@ class UserManagementView extends ConsumerWidget {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Lỗi: ${e.toString().replaceAll("Exception: ", "")}'),
+                            content: Text(
+                              'Lỗi: ${e.toString().replaceAll("Exception: ", "")}',
+                            ),
                             backgroundColor: Colors.red,
                           ),
                         );
