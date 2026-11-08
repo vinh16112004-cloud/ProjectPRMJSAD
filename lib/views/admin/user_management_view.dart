@@ -213,7 +213,7 @@ class UserManagementView extends ConsumerWidget {
     final emailController = TextEditingController();
     final phoneController = TextEditingController();
     final passwordController = TextEditingController();
-    String selectedRole = 'Reader';
+    String selectedRole = 'Editor'; // Đặt mặc định là Editor
     bool isLoading = false;
 
     showDialog(
@@ -304,7 +304,6 @@ class UserManagementView extends ConsumerWidget {
                           items: const [
                             DropdownMenuItem(value: 'Admin', child: Text('Admin')),
                             DropdownMenuItem(value: 'Editor', child: Text('Editor')),
-                            DropdownMenuItem(value: 'Reader', child: Text('Reader')),
                           ],
                           onChanged: (val) {
                             if (val != null) setState(() => selectedRole = val);
@@ -325,9 +324,7 @@ class UserManagementView extends ConsumerWidget {
                       ? null
                       : () async {
                     if (!formKey.currentState!.validate()) return;
-
                     setState(() => isLoading = true);
-
                     try {
                       await ref
                           .read(userManagementViewModelProvider)
