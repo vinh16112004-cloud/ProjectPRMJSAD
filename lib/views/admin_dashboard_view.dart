@@ -93,16 +93,16 @@ class _AdminDashboardViewState extends ConsumerState<AdminDashboardView> {
         foregroundColor: Colors.black,
         elevation: 1,
         actions: [
-          TextButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const UserHomeView()),
-              );
-            },
-            icon: const Icon(Icons.newspaper_outlined),
-            label: const Text('Trang đọc báo'),
-          ),
+          // TextButton.icon(
+          //   onPressed: () {
+          //     Navigator.push(
+          //       context,
+          //       MaterialPageRoute(builder: (_) => const UserHomeView()),
+          //     );
+          //   },
+          //   icon: const Icon(Icons.newspaper_outlined),
+          //   label: const Text('Trang đọc báo'),
+          // ),
           // Menu xổ xuống "Hi, admin" tại góc phải
           PopupMenuButton<String>(
             tooltip: 'Tài khoản',
