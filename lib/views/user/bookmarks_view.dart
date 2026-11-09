@@ -208,35 +208,6 @@ class _BookmarksViewState extends ConsumerState<BookmarksView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // =============================================================
-                // THANH BANNER THÔNG TIN ĐỌC OFFLINE
-                // =============================================================
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  color: isDark ? Colors.blue.shade900 : Colors.blue.shade50,
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.offline_pin_outlined,
-                        size: 18,
-                        color: isDark ? Colors.blue.shade200 : Colors.blue.shade700,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Tất cả bài viết đã lưu đều sẵn sàng đọc offline mọi lúc.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.blue.shade200 : Colors.blue.shade800,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // =============================================================
                 // PHÂN LOẠI THEO CHUYÊN MỤC (CATEGORY CHIPS)
                 // =============================================================
                 if (_savedArticles.isNotEmpty)
@@ -478,39 +449,15 @@ class _BookmarksViewState extends ConsumerState<BookmarksView> {
 
                                             const SizedBox(height: 6),
 
-                                            // Tác giả & biểu tượng Offline
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: Text(
-                                                    article.author.isNotEmpty ? article.author : 'Ban biên tập',
-                                                    style: TextStyle(
-                                                      fontSize: 12,
-                                                      color: Colors.grey[600],
-                                                    ),
-                                                    maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                                Row(
-                                                  children: [
-                                                    Icon(
-                                                      Icons.offline_pin,
-                                                      size: 14,
-                                                      color: Colors.green.shade600,
-                                                    ),
-                                                    const SizedBox(width: 3),
-                                                    Text(
-                                                      'Offline',
-                                                      style: TextStyle(
-                                                        fontSize: 11,
-                                                        color: Colors.green.shade700,
-                                                        fontWeight: FontWeight.bold,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ],
+                                            // Tác giả
+                                            Text(
+                                              article.author.isNotEmpty ? article.author : 'Ban biên tập',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey[600],
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
                                             ),
                                           ],
                                         ),
@@ -621,7 +568,7 @@ class _BookmarksViewState extends ConsumerState<BookmarksView> {
             Text(
               _searchQuery.isNotEmpty
                   ? 'Thử tìm kiếm với từ khóa khác trong các bài đã lưu.'
-                  : 'Khi đọc báo, bấm vào biểu tượng Bookmark để lưu bài viết đọc lại offline bất cứ lúc nào.',
+                  : 'Khi đọc báo, bấm vào biểu tượng Bookmark để lưu bài viết đọc lại bất cứ lúc nào.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 14, color: Colors.grey[600], height: 1.5),
             ),

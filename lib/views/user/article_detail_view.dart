@@ -165,7 +165,7 @@ class _ArticleDetailViewState extends ConsumerState<ArticleDetailView> {
               Expanded(
                 child: Text(
                   isSaved
-                      ? 'Đã lưu bài viết vào mục Yêu thích (Đọc offline) 📑'
+                      ? 'Đã lưu bài viết vào mục Yêu thích 📑'
                       : 'Đã xóa bài viết khỏi mục Yêu thích',
                 ),
               ),
